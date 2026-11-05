@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>作业小助手</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+  .filter-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .filter-bar button {
+    background: #fff; border: 2px solid var(--sky-200); border-radius: 14px;
+    padding: 8px 14px; font-size: 15px; cursor: pointer; color: var(--sky-700);
+    font-family: inherit; font-weight: bold;
+  }
+  .filter-bar button.active { background: var(--sky-500); color: #fff; border-color: var(--sky-500); }
+  .status-btns { display: flex; gap: 6px; }
+  .status-btns button {
+    padding: 6px 10px; border-radius: 10px; border: 2px solid var(--sky-100);
+    background: #fff; cursor: pointer; font-size: 13px; font-family: inherit;
+  }
+  .status-btns button.active { border-color: var(--sky-500); background: var(--sky-100); font-weight: bold; }
+  .big-progress { background: #fff; border-radius: 22px; padding: 20px; text-align: center; margin-bottom: 18px; border: 3px solid var(--sky-100); }
+  .big-progress .pct { font-size: 48px; font-weight: bold; color: var(--sky-600); }
+  .big-progress .lbl { color: var(--ink-soft); margin-bottom: 10px; }
+</style>
+</head>
+<body>
+<header class="app-header"></header>
+
+<main class="container">
+  <h2 class="page-title"><span class="emoji">📊</span><span data-i18n="progress">进度管理</span></h2>
+
+  <!-- 总进度 -->
+  <div class="big-progress">
+    <div class="lbl">总完成进度</div>
+    <div class="pct" id="totalPct">0%</div>
+    <div class="progress-bar"><span id="totalBar" style="width:0%"></span></div>
+    <div style="margin-top:10px;font-size:15px;color:var(--ink-soft)" id="totalText">0 / 0 已完成</div>
+  </div>
+
+  <!-- 筛选 -->
+  <div class="filter-bar">
+    <button data-f="all" class="active">全部</button>
+    <button data-f="todo" data-i18n="todo">未开始</button>
+    <button data-f="doing" data-i18n="doing">进行中</button>
+    <button data-f="done" data-i18n="done">已完成</button>
+  </div>
+
+  <!-- 作业列表 -->
+  <div class="card">
+    <div class="card-title">📋 <span>所有作业</span></div>
+    <div id="hwList"></div>
+  </div>
+</main>
+
+<div class="mascot" title="点我聊天"><span class="mascot-mouth"></span></div>
+<div class="mascot-bubble"></div>
+<nav class="bottom-nav"></nav>
+
+<script src="js/app.js"></script>
+<script>
+if (!requireLogin()) throw new Error("not logged in");
+initPage("progress");
+
+let filter = "all";
+
+function renderStats() {
+  const all = getHomeworks();
+  const done = all.filter(h => h.status === "done").length;
+  const pct = all.length === 0 ? 0 : Math.round(done / all.length * 100);
+  document.getElementById("totalPct").textContent = pct + "%";
+  document.getElementById("totalBar").style.width = pct + "%";
+  document.getElementById("totalText").textContent = `${done} / ${all.length} 已完成`;
+}
+
+function render() {
+  renderStats();
+  let list = getHomeworks();
+  if (filter !== "all") list = list.filter(h => h.status === filter);
+  list.sort((a,b) => (a.date < b.date ? 1 : -1));
+  const el = document.getElementById("hwList");
+  if (list.length === 0) { el.innerHTML = `<div class="empty"><span class="big-emoji">📭</span>暂无作业</div>`; return; }
+  el.innerHTML = list.map(h => `
+    <div class="hw-item">
+      <div class="hw-icon">${subjectIcon(h.subject)}</div>
+      <div class="hw-body">
+        <div class="hw-title">${h.title}</div>
+        <div class="hw-meta">
+          ${diffLabel(h.difficulty)}
+          ${statusLabel(h.status)}
+          <span>📅 ${h.date}</span>
+          <span>📚 ${h.subject}</span>
+        </div>
+      </div>
+      <div class="hw-actions" style="flex-direction:column;gap:6px">
+        <div class="status-btns">
+          <button class="${h.status==='todo'?'active':''}" onclick="setStatus('${h.id}','todo')">⭕</button>
+          <button class="${h.status==='doing'?'active':''}" onclick="setStatus('${h.id}','doing')">▶️</button>
+          <button class="${h.status==='done'?'active':''}" onclick="setStatus('${h.id}','done')">✅</button>
+        </div>
+        <button class="btn btn-danger" style="padding:6px 10px;font-size:13px" onclick="removeHW('${h.id}')">🗑️ 删除</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+function setStatus(id, s) {
+  updateHomework(id, { status: s });
+  if (s === "done") playSuccess(); else playClick();
+  render();
+}
+function removeHW(id) {
+  if (!confirm(t("confirmDelete"))) return;
+  deleteHomework(id); playClick(); render();
+}
+
+document.querySelectorAll(".filter-bar button").forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll(".filter-bar button").forEach(x => x.classList.remove("active"));
+    b.classList.add("active");
+    filter = b.dataset.f;
+    playClick();
+    render();
+  };
+});
+
+render();
+mascotSay("看看今天完成了多少作业吧~ 📊", 3000);
+</script>
+</body>
+</html>

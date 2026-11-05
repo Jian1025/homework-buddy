@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>作业小助手</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+  .setting-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 0; border-bottom: 2px solid var(--sky-100);
+  }
+  .setting-row:last-child { border-bottom: none; }
+  .setting-row .label { font-size: 18px; color: var(--ink); font-weight: bold; }
+  .setting-row .desc { font-size: 13px; color: var(--ink-soft); margin-top: 2px; }
+  .toggle {
+    width: 56px; height: 32px; background: var(--sky-100);
+    border-radius: 16px; position: relative; cursor: pointer;
+    transition: background .2s; flex-shrink: 0;
+  }
+  .toggle::after {
+    content: ""; position: absolute; top: 3px; left: 3px;
+    width: 26px; height: 26px; background: #fff; border-radius: 50%;
+    transition: transform .2s; box-shadow: 0 2px 4px rgba(0,0,0,.2);
+  }
+  .toggle.on { background: var(--green); }
+  .toggle.on::after { transform: translateX(24px); }
+  .seg {
+    display: flex; background: var(--sky-100); border-radius: 14px; padding: 4px;
+  }
+  .seg button {
+    border: none; background: transparent; padding: 8px 16px;
+    border-radius: 10px; font-size: 15px; cursor: pointer;
+    color: var(--sky-700); font-family: inherit; font-weight: bold;
+  }
+  .seg button.active { background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,.08); }
+  .parent-section {
+    background: #fff7ed; border: 3px dashed var(--orange);
+    border-radius: 18px; padding: 16px; margin-top: 16px;
+  }
+  .profile-card { text-align: center; padding: 20px; }
+  .profile-card .avatar {
+    width: 80px; height: 80px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--sky-400), var(--sky-600));
+    margin: 0 auto 12px; display: flex; align-items: center; justify-content: center;
+    font-size: 44px;
+  }
+  .profile-card .name { font-size: 22px; font-weight: bold; color: var(--sky-700); }
+</style>
+</head>
+<body>
+<header class="app-header"></header>
+
+<main class="container">
+  <h2 class="page-title"><span class="emoji">⚙️</span><span data-i18n="settings">设置</span></h2>
+
+  <!-- 个人信息 -->
+  <div class="card profile-card">
+    <div class="avatar">👦</div>
+    <div class="name" id="userName"></div>
+    <p style="color:var(--ink-soft);font-size:14px;margin-top:6px">💾 数据已云端同步（本设备）</p>
+    <button class="btn btn-danger" style="margin-top:14px" id="logoutBtn">🚪 <span data-i18n="logout">退出登录</span></button>
+  </div>
+
+  <!-- 通用设置 -->
+  <div class="card">
+    <div class="card-title">🌐 <span>通用</span></div>
+
+    <div class="setting-row">
+      <div>
+        <div class="label" data-i18n="language">语言</div>
+        <div class="desc">切换中文 / English</div>
+      </div>
+      <div class="seg" id="langSeg">
+        <button data-l="zh" class="active">中文</button>
+        <button data-l="en">English</button>
+      </div>
+    </div>
+
+    <div class="setting-row">
+      <div>
+        <div class="label" data-i18n="sound">提醒音效</div>
+        <div class="desc">计时结束、完成作业时的提示音</div>
+      </div>
+      <div class="toggle" id="soundToggle"></div>
+    </div>
+
+    <div class="setting-row">
+      <div>
+        <div class="label" data-i18n="fontSize">字号</div>
+        <div class="desc">适合小学生的大字号</div>
+      </div>
+      <div class="seg" id="fontSeg">
+        <button data-f="sm">小</button>
+        <button data-f="md" class="active">中</button>
+        <button data-f="lg">大</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 家长设置 -->
+  <div class="card">
+    <div class="card-title">👨‍👩‍👧 <span>家长设置</span></div>
+
+    <div class="setting-row">
+      <div>
+        <div class="label">家长密码</div>
+        <div class="desc" data-i18n="cashNeedParent">现金奖励需家长权限</div>
+      </div>
+      <button class="btn btn-ghost" id="setParentPwd">设置</button>
+    </div>
+
+    <div class="parent-section">
+      <p style="font-weight:bold;color:var(--orange);margin-bottom:8px">💰 现金奖励配置（需家长权限）</p>
+      <p style="font-size:14px;color:var(--ink-soft);margin-bottom:10px">管理零花钱类奖励，仅家长可修改</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <input class="input" id="parentPwdInput" type="password" placeholder="家长密码" style="flex:1;min-width:120px">
+        <button class="btn btn-warn" id="enterParent">进入管理</button>
+      </div>
+      <div id="parentPanel" style="display:none;margin-top:14px">
+        <p style="color:var(--green);font-weight:bold">✅ 已进入家长模式</p>
+        <div class="field" style="margin-top:10px">
+          <label class="label">单次零花钱上限（元）</label>
+          <input class="input" type="number" id="moneyLimit" min="0" value="50">
+        </div>
+        <button class="btn btn-primary btn-block" id="saveParent">保存家长设置</button>
+        <p style="margin-top:10px">
+          <a href="reward.html" style="color:var(--sky-600);font-size:15px">🎁 去奖励池管理现金奖励 →</a>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 关于 -->
+  <div class="card">
+    <div class="card-title">ℹ️ <span>关于</span></div>
+    <p style="color:var(--ink-soft)">📘 作业小助手 Homework Buddy v1.0</p>
+    <p style="color:var(--ink-soft);font-size:14px;margin-top:6px">专为小学3–6年级学生设计的作业管理好帮手</p>
+  </div>
+</main>
+
+<div class="mascot" title="点我聊天"><span class="mascot-mouth"></span></div>
+<div class="mascot-bubble"></div>
+<nav class="bottom-nav"></nav>
+
+<script src="js/app.js"></script>
+<script>
+if (!requireLogin()) throw new Error("not logged in");
+initPage("settings");
+
+document.getElementById("userName").textContent = currentUser();
+document.getElementById("logoutBtn").onclick = () => { playClick(); logout(); };
+
+// 语言
+const settings = () => uGet("settings", { sound: true, fontSize: "md" });
+const setSettings = v => uSet("settings", v);
+
+document.querySelectorAll("#langSeg button").forEach(b => {
+  b.classList.toggle("active", b.dataset.l === currentLang());
+  b.onclick = () => {
+    setLang(b.dataset.l);
+    document.querySelectorAll("#langSeg button").forEach(x => x.classList.remove("active"));
+    b.classList.add("active");
+    playClick();
+    toast(currentLang()==="zh" ? "已切换为中文" : "Switched to English");
+  };
+});
+
+// 音效开关
+const soundToggle = document.getElementById("soundToggle");
+function refreshSound() { soundToggle.classList.toggle("on", settings().sound); }
+refreshSound();
+soundToggle.onclick = () => {
+  const s = settings(); s.sound = !s.sound; setSettings(s); refreshSound();
+  if (s.sound) playClick();
+};
+
+// 字号
+document.querySelectorAll("#fontSeg button").forEach(b => {
+  b.classList.toggle("active", b.dataset.f === settings().fontSize);
+  b.onclick = () => {
+    const s = settings(); s.fontSize = b.dataset.f; setSettings(s);
+    document.querySelectorAll("#fontSeg button").forEach(x => x.classList.remove("active"));
+    b.classList.add("active");
+    document.body.style.fontSize = {sm:"16px",md:"18px",lg:"20px"}[b.dataset.f];
+    playClick();
+  };
+});
+
+// 家长密码
+document.getElementById("setParentPwd").onclick = () => {
+  const p = prompt("请设置家长密码（至少4位）：");
+  if (!p) return;
+  if (p.length < 4) { toast("密码至少4位"); return; }
+  const s = settings(); s.parentPwd = p; setSettings(s);
+  playSuccess(); toast("家长密码已设置");
+};
+
+// 进入家长模式
+document.getElementById("enterParent").onclick = () => {
+  const input = document.getElementById("parentPwdInput").value;
+  const saved = settings().parentPwd;
+  if (!saved) { toast("请先设置家长密码"); return; }
+  if (input === saved) {
+    document.getElementById("parentPanel").style.display = "block";
+    playSuccess(); toast("已进入家长模式");
+  } else {
+    toast("密码错误"); playBeep(200, 0.2, "square", 0.15);
+  }
+};
+document.getElementById("saveParent").onclick = () => {
+  const limit = parseInt(document.getElementById("moneyLimit").value) || 50;
+  const s = settings(); s.moneyLimit = limit; setSettings(s);
+  playSuccess(); toast("家长设置已保存");
+};
+if (settings().moneyLimit) document.getElementById("moneyLimit").value = settings().moneyLimit;
+
+mascotSay("有问题可以点我哦~ 🌟", 3000);
+</script>
+</body>
+</html>

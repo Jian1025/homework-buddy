@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>作业小助手</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+  .timer-card { text-align: center; padding: 30px 20px; }
+  .timer-ring {
+    width: 260px; height: 260px;
+    border-radius: 50%;
+    background: conic-gradient(var(--sky-400) var(--p,0%), var(--sky-100) 0);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 20px;
+    position: relative;
+    box-shadow: var(--shadow);
+  }
+  .timer-ring::before {
+    content: ""; position: absolute; inset: 18px;
+    background: #fff; border-radius: 50%;
+  }
+  .timer-time {
+    position: relative; font-size: 56px; font-weight: bold;
+    color: var(--sky-700); font-variant-numeric: tabular-nums;
+  }
+  .timer-label {
+    position: relative; font-size: 16px; color: var(--ink-soft);
+    margin-top: 4px;
+  }
+  .timer-info {
+    background: var(--sky-50); border-radius: 16px;
+    padding: 14px; margin-bottom: 18px; font-size: 17px;
+  }
+  .timer-controls { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .timer-controls .btn { min-width: 110px; }
+  .duration-set { display: flex; gap: 8px; justify-content: center; margin-bottom: 16px; flex-wrap: wrap; }
+  .duration-set button {
+    background: #fff; border: 2px solid var(--sky-200); border-radius: 12px;
+    padding: 8px 14px; font-size: 15px; cursor: pointer; color: var(--sky-700);
+    font-family: inherit; font-weight: bold;
+  }
+  .duration-set button.active { background: var(--sky-500); color: #fff; border-color: var(--sky-500); }
+</style>
+</head>
+<body>
+<header class="app-header"></header>
+
+<main class="container">
+  <h2 class="page-title"><span class="emoji">⏱️</span><span data-i18n="timer">番茄钟</span></h2>
+
+  <!-- 选择作业 -->
+  <div class="card">
+    <div class="card-title">📚 <span>选择作业</span></div>
+    <select class="select" id="hwSelect">
+      <option value="">-- 请选择要计时的作业 --</option>
+    </select>
+  </div>
+
+  <div class="card timer-card">
+    <div class="timer-info" id="hwInfo">请选择一项作业开始计时 ⏰</div>
+
+    <div class="duration-set">
+      <button data-min="15">15分钟</button>
+      <button data-min="25" class="active">25分钟</button>
+      <button data-min="45">45分钟</button>
+      <button data-min="60">60分钟</button>
+    </div>
+
+    <div class="timer-ring" id="ring" style="--p:0%">
+      <div>
+        <div class="timer-time" id="timeDisplay">25:00</div>
+        <div class="timer-label" id="timerState">准备开始</div>
+      </div>
+    </div>
+
+    <div class="timer-controls">
+      <button class="btn btn-success btn-lg" id="startBtn">▶️ <span data-i18n="start">开始</span></button>
+      <button class="btn btn-warn btn-lg" id="pauseBtn" disabled>⏸️ <span data-i18n="pause">暂停</span></button>
+      <button class="btn btn-danger btn-lg" id="resetBtn">🔄 <span data-i18n="reset">重置</span></button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🎯 <span>小贴士</span></div>
+    <p style="color:var(--ink-soft)">🍅 番茄工作法：专注25分钟，休息5分钟。<br>⏰ 计时结束会有柔和铃声提醒，并自动标记为完成哦~</p>
+  </div>
+</main>
+
+<div class="mascot" title="点我聊天"><span class="mascot-mouth"></span></div>
+<div class="mascot-bubble"></div>
+<nav class="bottom-nav"></nav>
+
+<script src="js/app.js"></script>
+<script>
+if (!requireLogin()) throw new Error("not logged in");
+initPage("timer");
+
+// 填充作业选择
+const sel = document.getElementById("hwSelect");
+const all = getHomeworks();
+all.forEach(h => {
+  const opt = document.createElement("option");
+  opt.value = h.id;
+  opt.textContent = `[${h.date}] ${h.subject} - ${h.title} (${{easy:"简单",medium:"中等",hard:"困难"}[h.difficulty]})`;
+  sel.appendChild(opt);
+});
+
+// 从URL参数预选
+const urlId = new URLSearchParams(location.search).get("id");
+if (urlId) sel.value = urlId;
+
+let currentId = null;
+let totalSec = 25 * 60;
+let remain = totalSec;
+let timer = null;
+let running = false;
+
+function updateInfo() {
+  const h = all.find(x => x.id === currentId);
+  const info = document.getElementById("hwInfo");
+  if (h) {
+    info.innerHTML = `${subjectIcon(h.subject)} <b>${h.title}</b><br><span style="color:var(--ink-soft);font-size:14px">${h.subject} · ${h.date} · ${{easy:"😊 简单",medium:"🤔 中等",hard:"😤 困难"}[h.difficulty]}</span>`;
+  } else {
+    info.textContent = "请选择一项作业开始计时 ⏰";
+  }
+}
+
+sel.onchange = () => {
+  currentId = sel.value || null;
+  const h = all.find(x => x.id === currentId);
+  if (h && h.duration) setDuration(h.duration);
+  updateInfo();
+  resetTimer();
+};
+if (urlId) sel.onchange();
+
+function setDuration(min) {
+  totalSec = min * 60;
+  remain = totalSec;
+  renderTime();
+}
+document.querySelectorAll(".duration-set button").forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll(".duration-set button").forEach(x => x.classList.remove("active"));
+    b.classList.add("active");
+    setDuration(parseInt(b.dataset.min));
+    resetTimer();
+    playClick();
+  };
+});
+
+function renderTime() {
+  const m = String(Math.floor(remain/60)).padStart(2,"0");
+  const s = String(remain%60).padStart(2,"0");
+  document.getElementById("timeDisplay").textContent = `${m}:${s}`;
+  const p = ((totalSec - remain) / totalSec) * 100;
+  document.getElementById("ring").style.setProperty("--p", p + "%");
+}
+
+function tick() {
+  remain--;
+  renderTime();
+  if (remain <= 0) finish();
+}
+
+function start() {
+  if (running) return;
+  if (!currentId) { toast("请先选择作业"); return; }
+  running = true;
+  timer = setInterval(tick, 1000);
+  document.getElementById("startBtn").disabled = true;
+  document.getElementById("pauseBtn").disabled = false;
+  document.getElementById("timerState").textContent = "专注中... 加油！💪";
+  updateHomework(currentId, { status: "doing" });
+  playClick();
+}
+function pause() {
+  if (!running) return;
+  running = false;
+  clearInterval(timer);
+  document.getElementById("startBtn").disabled = false;
+  document.getElementById("pauseBtn").disabled = true;
+  document.getElementById("timerState").textContent = "已暂停";
+  playClick();
+}
+function resetTimer() {
+  running = false;
+  clearInterval(timer);
+  remain = totalSec;
+  renderTime();
+  document.getElementById("startBtn").disabled = false;
+  document.getElementById("pauseBtn").disabled = true;
+  document.getElementById("timerState").textContent = "准备开始";
+}
+function finish() {
+  running = false;
+  clearInterval(timer);
+  document.getElementById("timerState").textContent = t("timeUp");
+  playTimeUp();
+  if (currentId) {
+    updateHomework(currentId, { status: "done" });
+    mascotSay("太棒啦！完成一项作业，可以去抽奖啦！🎁", 4000);
+    toast("🎉 作业完成！获得一次抽奖机会！");
+    setTimeout(() => { if (confirm("去抽盲盒奖励？🎁")) location.href = "reward.html"; }, 1200);
+  }
+}
+
+document.getElementById("startBtn").onclick = start;
+document.getElementById("pauseBtn").onclick = pause;
+document.getElementById("resetBtn").onclick = resetTimer;
+
+renderTime();
+updateInfo();
+mascotSay("专注学习，效率更高哦！🍅", 3000);
+</script>
+</body>
+</html>

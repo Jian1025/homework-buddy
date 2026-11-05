@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>作业小助手</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+  .box-area { text-align: center; padding: 20px; }
+  .lucky-box {
+    width: 180px; height: 180px;
+    margin: 0 auto 20px;
+    font-size: 120px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: transform .2s;
+    user-select: none;
+  }
+  .lucky-box.shake { animation: shake .5s ease infinite; }
+  @keyframes shake {
+    0%,100% { transform: rotate(0) scale(1); }
+    25% { transform: rotate(-8deg) scale(1.05); }
+    75% { transform: rotate(8deg) scale(1.05); }
+  }
+  .lucky-box.pop { animation: pop .5s ease; }
+  .draw-chances {
+    font-size: 20px; color: var(--sky-700); font-weight: bold;
+    margin-bottom: 14px;
+  }
+  .reward-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+  }
+  .reward-item {
+    background: var(--sky-50); border: 2px solid var(--sky-100);
+    border-radius: 16px; padding: 14px; text-align: center;
+  }
+  .reward-item .ico { font-size: 36px; }
+  .reward-item .nm { font-size: 15px; font-weight: bold; margin-top: 6px; }
+  .reward-item .tp { font-size: 12px; color: var(--ink-soft); }
+  .reward-item .del { color: var(--red); cursor: pointer; font-size: 13px; margin-top: 6px; }
+  .history-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px; border-bottom: 1px solid var(--sky-100);
+  }
+  .history-item:last-child { border-bottom: none; }
+  .history-item .ico { font-size: 28px; }
+  .history-item .info { flex: 1; }
+  .history-item .info .nm { font-weight: bold; font-size: 16px; }
+  .history-item .info .tm { font-size: 13px; color: var(--ink-soft); }
+  .parent-gate {
+    background: #fff7ed; border: 3px dashed var(--orange);
+    border-radius: 16px; padding: 14px; margin-top: 12px;
+  }
+  .reward-result {
+    font-size: 28px; font-weight: bold; color: var(--sky-700);
+    min-height: 50px;
+  }
+  .result-emoji { font-size: 64px; display: block; }
+</style>
+</head>
+<body>
+<header class="app-header"></header>
+
+<main class="container">
+  <h2 class="page-title"><span class="emoji">🎁</span><span data-i18n="reward">盲盒抽奖</span></h2>
+
+  <!-- 抽奖区 -->
+  <div class="card box-area">
+    <div class="draw-chances">🎟️ 抽奖次数：<span id="chances">0</span> 次</div>
+    <div class="lucky-box" id="luckyBox">🎁</div>
+    <div class="reward-result" id="rewardResult">点击盲盒开始抽奖！</div>
+    <button class="btn btn-pink btn-lg" id="drawBtn" disabled>🎰 <span data-i18n="draw">抽奖</span></button>
+    <p style="margin-top:12px;color:var(--ink-soft);font-size:15px">💡 完成一项作业即可获得一次抽奖机会</p>
+  </div>
+
+  <!-- 抽奖记录 -->
+  <div class="card">
+    <div class="card-title">📜 <span data-i18n="history">抽奖记录</span></div>
+    <div id="historyList"></div>
+  </div>
+
+  <!-- 奖励池（家长配置） -->
+  <div class="card">
+    <div class="card-title">🏆 <span data-i18n="rewardPool">奖励池</span>
+      <span style="margin-left:auto;font-size:14px;color:var(--orange)">👨‍👩‍👧 家长可配置</span>
+    </div>
+    <div class="reward-grid" id="rewardGrid"></div>
+
+    <button class="btn btn-primary btn-block" id="addRewardBtn" style="margin-top:14px">➕ <span data-i18n="addReward">添加奖励</span></button>
+
+    <div class="parent-gate" id="parentGate" style="display:none">
+      <p style="color:var(--orange);font-weight:bold;margin-bottom:8px">🔒 家长权限验证</p>
+      <p style="font-size:14px;color:var(--ink-soft);margin-bottom:8px" data-i18n="cashNeedParent">现金奖励需家长权限</p>
+      <input class="input" id="parentPwd" type="password" placeholder="请输入家长密码" style="margin-bottom:8px">
+      <button class="btn btn-warn" id="parentConfirm">确认</button>
+    </div>
+  </div>
+</main>
+
+<!-- 添加奖励弹窗 -->
+<div class="modal-mask" id="rewardModal">
+  <div class="modal">
+    <h3 data-i18n="addReward">添加奖励</h3>
+    <div class="field">
+      <label class="label" data-i18n="rewardType">奖励类型</label>
+      <select class="select" id="newType">
+        <option value="snack">🍪 零食</option>
+        <option value="animation">📺 动画时长</option>
+        <option value="money">💰 零花钱（需家长）</option>
+        <option value="points">⭐ 虚拟积分</option>
+      </select>
+    </div>
+    <div class="field">
+      <label class="label">奖励名称</label>
+      <input class="input" id="newName" placeholder="例如：冰淇淋一个">
+    </div>
+    <div class="field">
+      <label class="label">图标 Emoji</label>
+      <input class="input" id="newIcon" placeholder="例如：🍦" maxlength="4">
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-primary btn-block" id="saveReward">保存</button>
+      <button class="btn btn-ghost btn-block" id="cancelReward">取消</button>
+    </div>
+  </div>
+</div>
+
+<div class="mascot" title="点我聊天"><span class="mascot-mouth"></span></div>
+<div class="mascot-bubble"></div>
+<nav class="bottom-nav"></nav>
+
+<script src="js/app.js"></script>
+<script>
+if (!requireLogin()) throw new Error("not logged in");
+initPage("reward");
+
+const rewards = () => uGet("rewards", []);
+const setRewards = v => uSet("rewards", v);
+const history = () => uGet("drawHistory", []);
+const setHistory = v => uSet("drawHistory", v);
+
+// 抽奖次数 = 已完成作业数 - 已抽奖次数
+function getChances() {
+  const doneCount = getHomeworks().filter(h => h.status === "done").length;
+  return Math.max(0, doneCount - history().length);
+}
+
+function renderChances() {
+  const c = getChances();
+  document.getElementById("chances").textContent = c;
+  document.getElementById("drawBtn").disabled = c <= 0;
+}
+
+function renderHistory() {
+  const list = history().slice().reverse();
+  const el = document.getElementById("historyList");
+  if (list.length === 0) { el.innerHTML = `<div class="empty"><span class="big-emoji">🎁</span>还没有抽奖记录</div>`; return; }
+  el.innerHTML = list.map(h => `
+    <div class="history-item">
+      <div class="ico">${h.icon}</div>
+      <div class="info">
+        <div class="nm">${h.name}</div>
+        <div class="tm">${new Date(h.time).toLocaleString()}</div>
+      </div>
+    </div>
+  `).join("");
+}
+
+function renderPool() {
+  const list = rewards();
+  const el = document.getElementById("rewardGrid");
+  if (list.length === 0) { el.innerHTML = `<div class="empty">奖励池为空</div>`; return; }
+  el.innerHTML = list.map(r => `
+    <div class="reward-item">
+      <div class="ico">${r.icon}</div>
+      <div class="nm">${r.name}</div>
+      <div class="tp">${typeLabel(r.type)}${r.needParent ? " 🔒" : ""}</div>
+      <div class="del" onclick="delReward('${r.id}')">🗑️ 删除</div>
+    </div>
+  `).join("");
+}
+function typeLabel(t) {
+  return {snack:"🍪 零食",animation:"📺 动画",money:"💰 零花钱",points:"⭐ 积分"}[t] || t;
+}
+
+// 抽奖
+let drawing = false;
+document.getElementById("drawBtn").onclick = () => {
+  if (drawing) return;
+  if (getChances() <= 0) { toast("没有抽奖机会啦，快去完成作业吧！"); return; }
+  drawing = true;
+  const box = document.getElementById("luckyBox");
+  const result = document.getElementById("rewardResult");
+  box.classList.add("shake");
+  result.textContent = "抽奖中...";
+  playBeep(440, 0.08, "square", 0.1);
+  let ticks = 0;
+  const tickInt = setInterval(() => {
+    playBeep(440 + Math.random()*200, 0.05, "square", 0.08);
+    ticks++;
+    if (ticks > 12) {
+      clearInterval(tickInt);
+      box.classList.remove("shake");
+      box.classList.add("pop");
+      setTimeout(() => box.classList.remove("pop"), 500);
+      // 随机奖励
+      const pool = rewards();
+      const r = pool[Math.floor(Math.random()*pool.length)];
+      const his = history();
+      his.push({ id: id(), rewardId: r.id, name: r.name, icon: r.icon, type: r.type, time: Date.now() });
+      setHistory(his);
+      result.innerHTML = `<span class="result-emoji">${r.icon}</span>恭喜获得：${r.name}`;
+      playSuccess();
+      mascotSay(`太棒了！获得 ${r.name} ${r.icon}`, 3500);
+      drawing = false;
+      renderChances();
+      renderHistory();
+    }
+  }, 120);
+};
+document.getElementById("luckyBox").onclick = () => document.getElementById("drawBtn").click();
+
+// 奖励池管理
+function delReward(id) {
+  if (!confirm("确定删除这个奖励吗？")) return;
+  setRewards(rewards().filter(r => r.id !== id));
+  renderPool();
+}
+
+document.getElementById("addRewardBtn").onclick = () => {
+  document.getElementById("rewardModal").classList.add("show");
+};
+document.getElementById("cancelReward").onclick = () => {
+  document.getElementById("rewardModal").classList.remove("show");
+};
+document.getElementById("saveReward").onclick = () => {
+  const name = document.getElementById("newName").value.trim();
+  const type = document.getElementById("newType").value;
+  const icon = document.getElementById("newIcon").value.trim() || "🎁";
+  if (!name) { toast("请输入奖励名称"); return; }
+  const needParent = type === "money";
+  const list = rewards();
+  list.push({ id: id(), name, type, icon, count: 1, needParent });
+  setRewards(list);
+  document.getElementById("newName").value = "";
+  document.getElementById("newIcon").value = "";
+  document.getElementById("rewardModal").classList.remove("show");
+  renderPool();
+  toast(t("saved"));
+  playSuccess();
+};
+
+renderChances();
+renderHistory();
+renderPool();
+mascotSay("完成作业就能抽奖哦！🎁", 3000);
+</script>
+</body>
+</html>

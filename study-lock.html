@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>作业小助手</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+  .monitor-card { text-align: center; }
+  #videoBox {
+    width: 100%; max-width: 480px; aspect-ratio: 4/3;
+    background: #000; border-radius: 20px; overflow: hidden;
+    margin: 0 auto 16px; position: relative;
+    border: 4px solid var(--sky-200);
+  }
+  #videoBox video, #videoBox canvas {
+    width: 100%; height: 100%; object-fit: cover;
+  }
+  #videoBox canvas { position: absolute; inset: 0; }
+  .study-status {
+    font-size: 22px; font-weight: bold; margin-bottom: 10px;
+  }
+  .study-status.studying { color: var(--green); }
+  .study-status.not-studying { color: var(--red); }
+  .motion-bar {
+    height: 16px; background: var(--sky-100); border-radius: 10px;
+    overflow: hidden; margin: 10px 0;
+  }
+  .motion-bar > span {
+    display: block; height: 100%; width: 0%;
+    background: linear-gradient(90deg, var(--green), var(--yellow), var(--red));
+    transition: width .3s;
+  }
+  .lock-screen {
+    position: fixed; inset: 0; z-index: 300;
+    background: linear-gradient(135deg, var(--sky-600), var(--sky-800));
+    display: none; flex-direction: column; align-items: center; justify-content: center;
+    color: #fff; padding: 20px;
+  }
+  .lock-screen.show { display: flex; }
+  .lock-screen .lock-icon { font-size: 80px; margin-bottom: 20px; }
+  .lock-screen h2 { font-size: 32px; margin-bottom: 10px; }
+  .lock-screen p { opacity: .9; margin-bottom: 24px; text-align: center; }
+  .lock-screen .input { background: rgba(255,255,255,.15); color: #fff; border-color: rgba(255,255,255,.4); }
+  .lock-screen .input::placeholder { color: rgba(255,255,255,.6); }
+  .blocked-list { text-align: left; background: rgba(255,255,255,.1); border-radius: 14px; padding: 14px; margin-top: 16px; font-size: 15px; }
+  .blocked-list li { margin: 6px 0; }
+</style>
+</head>
+<body>
+<header class="app-header"></header>
+
+<main class="container">
+  <h2 class="page-title"><span class="emoji">🔒</span><span data-i18n="studyLock">学习锁监控</span></h2>
+
+  <!-- 密码设置 -->
+  <div class="card">
+    <div class="card-title">🔐 <span>学习锁密码</span></div>
+    <div class="field">
+      <label class="label">设置/修改密码</label>
+      <input class="input" type="password" id="lockPwd" placeholder="设置4位以上密码">
+    </div>
+    <button class="btn btn-primary btn-block" id="setPwdBtn">💾 保存密码</button>
+    <p style="margin-top:10px;font-size:14px;color:var(--ink-soft)">💡 开启学习锁后，需输入密码才能解锁离开</p>
+  </div>
+
+  <!-- 学习监控 -->
+  <div class="card monitor-card">
+    <div class="card-title">📷 <span data-i18n="monitor">学习监控</span></div>
+    <div id="videoBox">
+      <video id="video" autoplay playsinline muted></video>
+      <canvas id="canvas"></canvas>
+    </div>
+    <div class="study-status" id="studyStatus">⏸️ 监控未开启</div>
+    <div class="motion-bar"><span id="motionBar"></span></div>
+    <p style="font-size:14px;color:var(--ink-soft)">活动强度（检测手部/纸笔动作）</p>
+    <div style="display:flex;gap:10px;justify-content:center;margin-top:14px;flex-wrap:wrap">
+      <button class="btn btn-success" id="startCam">📷 开启监控</button>
+      <button class="btn btn-danger" id="stopCam">⏹️ 关闭</button>
+      <button class="btn btn-warn" id="startLock">🔒 开启学习锁</button>
+    </div>
+  </div>
+
+  <!-- 锁定的娱乐软件 -->
+  <div class="card">
+    <div class="card-title">🚫 <span>已锁定的娱乐应用</span></div>
+    <ul style="list-style:none;padding:0">
+      <li style="padding:10px;border-bottom:1px solid var(--sky-100)">🎮 游戏 — 已锁定</li>
+      <li style="padding:10px;border-bottom:1px solid var(--sky-100)">📺 视频网站 — 已锁定</li>
+      <li style="padding:10px;border-bottom:1px solid var(--sky-100)">💬 社交软件 — 已锁定</li>
+      <li style="padding:10px">🎵 音乐App — 已锁定</li>
+    </ul>
+    <p style="margin-top:10px;font-size:13px;color:var(--ink-soft)">* 浏览器中模拟锁定，实际系统级锁定需配合家长控制软件</p>
+  </div>
+</main>
+
+<!-- 学习锁全屏 -->
+<div class="lock-screen" id="lockScreen">
+  <div class="lock-icon">🔒</div>
+  <h2>学习锁已开启</h2>
+  <p>小朋友，现在是学习时间哦~<br>娱乐应用已全部锁定，专心写作业吧！✍️</p>
+  <div style="width:100%;max-width:320px">
+    <input class="input" id="unlockPwd" type="password" placeholder="请输入密码解锁">
+    <button class="btn btn-success btn-block btn-lg" id="unlockBtn" style="margin-top:10px">🔓 解锁</button>
+  </div>
+  <ul class="blocked-list">
+    <li>🎮 游戏 — 锁定中</li>
+    <li>📺 视频 — 锁定中</li>
+    <li>💬 社交 — 锁定中</li>
+  </ul>
+</div>
+
+<div class="mascot" title="点我聊天"><span class="mascot-mouth"></span></div>
+<div class="mascot-bubble"></div>
+<nav class="bottom-nav"></nav>
+
+<script src="js/app.js"></script>
+<script>
+if (!requireLogin()) throw new Error("not logged in");
+initPage("studyLock");
+
+const lockCfg = () => uGet("studyLock", { password: "", enabled: false });
+const setLock = v => uSet("studyLock", v);
+
+// 密码设置
+document.getElementById("setPwdBtn").onclick = () => {
+  const p = document.getElementById("lockPwd").value;
+  if (p.length < 4) { toast("密码至少4位"); return; }
+  const c = lockCfg(); c.password = p; setLock(c);
+  document.getElementById("lockPwd").value = "";
+  playSuccess(); toast("密码已保存！");
+};
+
+// 学习锁
+document.getElementById("startLock").onclick = () => {
+  const c = lockCfg();
+  if (!c.password) { toast("请先设置学习锁密码"); return; }
+  document.getElementById("lockScreen").classList.add("show");
+  playClick();
+};
+document.getElementById("unlockBtn").onclick = () => {
+  const input = document.getElementById("unlockPwd").value;
+  if (input === lockCfg().password) {
+    document.getElementById("lockScreen").classList.remove("show");
+    document.getElementById("unlockPwd").value = "";
+    playSuccess(); toast("已解锁！");
+  } else {
+    toast("密码错误"); playBeep(200, 0.2, "square", 0.15);
+  }
+};
+
+// 摄像头 + 运动检测（识别纸笔学习动作）
+const video = document.getElementById("video");
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+let stream = null;
+let detectTimer = null;
+let lastFrame = null;
+let idleCount = 0;
+const IDLE_THRESHOLD = 15; // 连续15次检测不到活动 => 提醒
+
+document.getElementById("startCam").onclick = async () => {
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240, facingMode: "user" } });
+    video.srcObject = stream;
+    await video.play();
+    canvas.width = 160; canvas.height = 120;
+    document.getElementById("studyStatus").textContent = "正在认真学习中 👍";
+    document.getElementById("studyStatus").className = "study-status studying";
+    startDetection();
+    toast("监控已开启 📷");
+  } catch (e) {
+    toast("无法访问摄像头：" + e.message);
+  }
+};
+document.getElementById("stopCam").onclick = () => {
+  if (stream) stream.getTracks().forEach(t => t.stop());
+  stream = null;
+  clearInterval(detectTimer);
+  lastFrame = null;
+  document.getElementById("studyStatus").textContent = "⏸️ 监控未开启";
+  document.getElementById("studyStatus").className = "study-status";
+  document.getElementById("motionBar").style.width = "0%";
+};
+
+function startDetection() {
+  detectTimer = setInterval(() => {
+    if (!stream) return;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const curr = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    let motion = 0;
+    if (lastFrame) {
+      const d1 = curr.data, d2 = lastFrame.data;
+      for (let i = 0; i < d1.length; i += 16) { // 采样
+        const dr = Math.abs(d1[i]-d2[i]);
+        const dg = Math.abs(d1[i+1]-d2[i+1]);
+        const db = Math.abs(d1[i+2]-d2[i+2]);
+        if (dr + dg + db > 60) motion++;
+      }
+    }
+    lastFrame = curr;
+    const pct = Math.min(100, motion / 200 * 100);
+    document.getElementById("motionBar").style.width = pct + "%";
+
+    const statusEl = document.getElementById("studyStatus");
+    if (pct > 3) {
+      idleCount = 0;
+      statusEl.textContent = t("studying") + " 👍";
+      statusEl.className = "study-status studying";
+    } else {
+      idleCount++;
+      statusEl.textContent = "好像没有在学习哦... 🤔";
+      statusEl.className = "study-status not-studying";
+      if (idleCount >= IDLE_THRESHOLD) {
+        idleCount = 0;
+        mascotSay(t("noStudy"), 3500);
+        playBeep(600, 0.15, "sine", 0.18);
+        setTimeout(() => playBeep(800, 0.15, "sine", 0.18), 200);
+      }
+    }
+  }, 1000);
+}
+
+mascotSay("开启监控，我会陪你一起学习哦~ 👀", 3000);
+</script>
+</body>
+</html>

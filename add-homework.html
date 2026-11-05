@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>作业小助手</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+  .voice-area { position: relative; }
+  .voice-fab {
+    position: absolute; right: 12px; bottom: 12px;
+    width: 52px; height: 52px; border-radius: 16px; border: none;
+    background: var(--pink); color: #fff; font-size: 24px; cursor: pointer;
+    box-shadow: var(--shadow);
+  }
+  .voice-fab.recording { background: var(--red); animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
+  .diff-picker { display: flex; gap: 10px; }
+  .diff-picker label {
+    flex: 1; text-align: center; padding: 14px; border-radius: 16px;
+    border: 3px solid var(--sky-100); cursor: pointer; font-weight: bold;
+    background: var(--sky-50); transition: all .2s;
+  }
+  .diff-picker input { display: none; }
+  .diff-picker input:checked + span { /* handled via class */ }
+  .diff-picker label.checked { border-color: var(--sky-500); background: var(--sky-100); transform: translateY(-2px); }
+  .diff-picker label .emoji { display: block; font-size: 28px; }
+</style>
+</head>
+<body>
+<header class="app-header"></header>
+
+<main class="container">
+  <h2 class="page-title"><span class="emoji">➕</span><span data-i18n="addHomework">新增作业</span></h2>
+
+  <div class="card">
+    <div class="field">
+      <label class="label">📝 <span data-i18n="title">作业内容</span></label>
+      <div class="voice-area">
+        <textarea class="textarea" id="hwTitle" rows="3" placeholder="✍️ 写下今天的作业内容..."></textarea>
+        <button class="voice-fab" id="voiceBtn" title="语音输入">🎤</button>
+      </div>
+      <p id="voiceHint" style="font-size:14px;color:var(--ink-soft);margin-top:6px">💡 点击麦克风可用语音输入作业</p>
+    </div>
+
+    <div class="field">
+      <label class="label">📚 <span data-i18n="subject">科目</span></label>
+      <select class="select" id="hwSubject">
+        <option>语文</option><option>数学</option><option>英语</option>
+        <option>科学</option><option>美术</option><option>音乐</option>
+        <option>体育</option><option>其他</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label class="label">📅 <span data-i18n="date">日期</span></label>
+      <input class="input" type="date" id="hwDate">
+    </div>
+
+    <div class="field">
+      <label class="label">🎯 <span data-i18n="difficulty">难度</span></label>
+      <div class="diff-picker" id="diffPicker">
+        <label data-v="easy"><span class="emoji">😊</span><span data-i18n="easy">简单</span></label>
+        <label data-v="medium" class="checked"><span class="emoji">🤔</span><span data-i18n="medium">中等</span></label>
+        <label data-v="hard"><span class="emoji">😤</span><span data-i18n="hard">困难</span></label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="label">⏱️ 预计用时（分钟）</label>
+      <input class="input" type="number" id="hwDuration" min="1" max="180" value="25">
+    </div>
+
+    <button class="btn btn-primary btn-block btn-lg" id="saveBtn">💾 <span data-i18n="save">保存</span></button>
+    <button class="btn btn-ghost btn-block" style="margin-top:10px" onclick="history.back()">↩️ <span data-i18n="cancel">取消</span></button>
+  </div>
+</main>
+
+<div class="mascot" title="点我聊天"><span class="mascot-mouth"></span></div>
+<div class="mascot-bubble"></div>
+<nav class="bottom-nav"></nav>
+
+<script src="js/app.js"></script>
+<script>
+if (!requireLogin()) throw new Error("not logged in");
+initPage("addHomework");
+
+document.getElementById("hwDate").value = todayStr();
+
+let chosenDiff = "medium";
+document.querySelectorAll("#diffPicker label").forEach(l => {
+  l.onclick = () => {
+    document.querySelectorAll("#diffPicker label").forEach(x => x.classList.remove("checked"));
+    l.classList.add("checked");
+    chosenDiff = l.dataset.v;
+    playClick();
+  };
+});
+
+// 语音输入
+const voiceBtn = document.getElementById("voiceBtn");
+const hint = document.getElementById("voiceHint");
+const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition = null;
+if (SpeechRec) {
+  recognition = new SpeechRec();
+  recognition.lang = currentLang() === "zh" ? "zh-CN" : "en-US";
+  recognition.interimResults = false;
+  recognition.onresult = e => {
+    const txt = e.results[0][0].transcript;
+    const ta = document.getElementById("hwTitle");
+    ta.value = ta.value ? ta.value + " " + txt : txt;
+    hint.textContent = "✅ 识别结果：" + txt;
+  };
+  recognition.onerror = () => hint.textContent = "❌ 识别失败，请重试";
+  recognition.onend = () => voiceBtn.classList.remove("recording");
+} else {
+  hint.textContent = "⚠️ 当前浏览器不支持语音输入";
+}
+voiceBtn.onclick = () => {
+  if (!recognition) { toast("当前浏览器不支持语音输入"); return; }
+  if (voiceBtn.classList.contains("recording")) { recognition.stop(); return; }
+  voiceBtn.classList.add("recording");
+  recognition.lang = currentLang() === "zh" ? "zh-CN" : "en-US";
+  hint.textContent = "🎙️ 正在聆听... 请说出作业内容";
+  try { recognition.start(); } catch(e) { voiceBtn.classList.remove("recording"); }
+};
+
+document.getElementById("saveBtn").onclick = () => {
+  const title = document.getElementById("hwTitle").value.trim();
+  if (!title) { toast("请输入作业内容"); return; }
+  addHomework({
+    title,
+    subject: document.getElementById("hwSubject").value,
+    date: document.getElementById("hwDate").value,
+    difficulty: chosenDiff,
+    duration: parseInt(document.getElementById("hwDuration").value) || 25,
+    status: "todo"
+  });
+  playSuccess(); toast(t("saved"));
+  setTimeout(() => location.href = "calendar.html", 600);
+};
+
+mascotSay("认真记录每一项作业哦~ 📝", 3000);
+</script>
+</body>
+</html>
