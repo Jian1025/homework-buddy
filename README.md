@@ -29,28 +29,28 @@ The whole UI uses a soft cartoon style, sky‑blue theme, emoji decorations and 
 
 ## 🧩 Core Features 核心功能
 - 🎁 **Homework Blind Box Reward 作业盲盒奖励**
-  Earn one blind box draw after finishing each task. Reward pool includes snacks, animation time, pocket money and virtual points. Rewards can be configured by parents. All records are saved under your account.
-  每完成一项任务可抽取一次盲盒。奖励池包含零食、看动画时间、零花钱、虚拟积分，奖励内容支持家长自定义。所有记录保存在账号内。
+  > Earn one blind box draw after finishing each task. Reward pool includes snacks, animation time, pocket money and virtual points. Rewards can be configured by parents. All records are saved under your account.
+  > 每完成一项任务可抽取一次盲盒。奖励池包含零食、看动画时间、零花钱、虚拟积分，奖励内容支持家长自定义。所有记录保存在账号内。
 - 📅 **Calendar & Task Input 日历与任务录入**
-  Slide to switch dates or adjust date manually. Mark difficulty level for every homework item. Support text input and voice input for quick task creation.
+   > Slide to switch dates or adjust date manually. Mark difficulty level for every homework item. Support text input and voice input for quick task creation.
   滑动切换日期，也可手动调整日期；可为每项作业标注难度；支持文字输入、语音快速录入任务。
 - ⏱️ **Pomodoro Countdown Timer 番茄倒计时**
-  Set independent countdown for each homework task. Start / pause / reset controls. Soft alarm rings when time is up.
+   > Set independent countdown for each homework task. Start / pause / reset controls. Soft alarm rings when time is up.
   每项作业可单独设置倒计时，支持开始 / 暂停 / 重置；时间结束时有轻柔提示音。
 - 📊 **Homework Progress Management 作业进度管理**
-  View and manually update task status: Not Started / In Progress / Completed. Delete any task freely.
+  >  View and manually update task status: Not Started / In Progress / Completed. Delete any task freely.
   查看并手动修改任务状态：未开始 / 进行中 / 已完成，可自由删除任务。
 - 🔒 **Study Lock Mod 学习锁定模式e**
-  Set your unlock password. Block entertainment apps on your device during study sessions to reduce distractions.
+   > Set your unlock password. Block entertainment apps on your device during study sessions to reduce distractions.
   设置解锁密码，学习时段屏蔽设备上的娱乐应用，减少干扰。
 - ☁️ **Account & Cloud Save 账号与云同步**
-  Log in to sync your homework list, blind box records and settings. Data can be restored across devices.
+  >  Log in to sync your homework list, blind box records and settings. Data can be restored across devices.
   登录账号即可同步作业清单、盲盒记录与设置，多设备之间可以恢复数据。
 - 🤖 **Gentle Study Monitoring 温和学习监督**
-  Detect whether the student is doing paper-and-pencil work. The cartoon mascot will pop up friendly reminders if off-task.
+  >  Detect whether the student is doing paper-and-pencil work. The cartoon mascot will pop up friendly reminders if off-task.
   识别孩子是否在进行纸笔学习；分心时卡通吉祥物会弹出友好提醒。
 - 🌐 **Bilingual Support 双语支持**
-  One-click toggle between Chinese and English. All interface text updates synchronously.
+  >  One-click toggle between Chinese and English. All interface text updates synchronously.
   一键切换中英文，界面文字同步更新。
 
 ## 🖼️ Preview 预览
