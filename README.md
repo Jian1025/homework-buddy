@@ -55,12 +55,6 @@ The whole UI uses a soft cartoon style, sky‑blue theme, emoji decorations and 
 git clone https://github.com/[YOUR_USERNAME]/homework-buddy.git
 cd homework-buddy
 
-# install dependencies
-npm install
-
-# start dev server
-npm run dev
-
 🎯 项目简介
 作业小伙伴（Homework Buddy）是一款专为小学三至六年级学生打造的作业规划工具。它通过盲盒奖励、番茄钟计时、进度追踪和温和学习提醒，让写作业变得有趣。整体界面采用柔和卡通风格、天蓝色主题，搭配表情装饰，支持中英文切换。
 核心目标：用正向激励的方式帮助孩子养成良好的写作业习惯，而非施压。
@@ -78,14 +72,9 @@ npm run dev
 页面：登录页、首页日历、添加任务页、番茄钟页、盲盒页、进度管理页、锁定与监督页、设置页
 🚀 快速上手
 本项目面向快速网页原型开发、AI 辅助快速开发。
-本地运行
-bash
-# 拉取代码仓库
-git clone https://github.com/[你的用户名]/homework-buddy.git
-cd homework-buddy
 
-# 安装依赖
+# install dependencies
 npm install
 
-# 启动开发服务
+# start dev server
 npm run dev
